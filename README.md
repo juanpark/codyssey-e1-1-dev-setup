@@ -392,6 +392,23 @@ $ docker compose down            # 정리 (볼륨 유지)
 2. **Docker 소켓 권한 거부** — `docker run` 시 `permission denied ... /var/run/docker.sock`. 원인: 사용자가 `docker` 그룹에 없음. 확인: `sudo docker run hello-world`는 성공(데몬 정상). 해결: `sudo usermod -aG docker $USER` + 터미널 재시작. (`chmod 666` 소켓은 금지 — docker 그룹은 사실상 root 권한.)
 3. **스크립트 shebang 경로 오타** — `./permission_demo.sh` 실행 시 `bad interpreter: /sh/zsh`. 원인: shebang이 잘못된 경로(`#!/sh/zsh`). 확인: `echo $SHELL` = `/usr/bin/zsh`. 해결: `#!/usr/bin/zsh`로 수정. (이식성엔 `#!/usr/bin/env bash` 권장.)
 4. **gh 브라우저 자동 실행 실패** — `gh auth login` 웹 인증에서 `exec: "...wslview": not found`. 원인: WSL에 브라우저 런처(wslview) 미설치. 해결: 표시된 URL을 Windows 브라우저에 수동 입력. (근본 해결: `sudo apt install wslu`.)
+5. **포트 충돌 (호스트 포트 선점)** — 증상: `docker run -p ...` 또는 `docker compose up`이 `bind: address already in use`로 실패. 원인: 매핑하려는 호스트 포트(예: 8082)를 다른 프로세스가 이미 점유. 확인 → 해제:
+```text
+# 1) 포트를 점유한 프로세스(PID) 확인
+$ lsof -i :8082                  # macOS / Linux
+COMMAND     PID      USER  ...  NAME
+com.docker 1234  juanpark  ...  TCP *:8082 (LISTEN)   # ← 점유 프로세스 + PID(1234)
+$ ss -ltnp | grep :8082          # Linux (listen 소켓 + PID)
+> netstat -ano | findstr :8082   # Windows / WSL 호스트 측 (마지막 열 = PID)
+
+# 2) 해제 — 점유 프로세스 종료
+$ kill <PID>                     # 안 되면 강제: kill -9 <PID>
+> taskkill /PID <PID> /F         # Windows
+
+# 또는 프로세스를 죽이지 않고 매핑 호스트 포트를 변경
+$ docker run -p 8083:5000 ...    # compose면 ports의 "8082:5000" → "8083:5000"
+```
+확인: 다시 `lsof -i :8082`가 비면 해제 완료 → `docker compose up -d` 재시도.
 
 ---
 

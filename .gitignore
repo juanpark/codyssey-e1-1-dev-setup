@@ -1,0 +1,10 @@
+.env
+.env.*
+*.pem
+*.key
+*_token*
+.DS_STORE
+__pycache__/
+node_modules/
+build/
+*.log

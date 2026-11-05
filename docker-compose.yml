@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .                        # build from the Dockerfile in this folder
+    image: codyssey-e1-1-web:1.0    # tag the built image (matches `docker build -t`)
+    ports:
+      - "8082:5000"                 # host:container
+    environment:
+      APP_MODE: prod                # §5.4 env var → shown on the page
+      PORT: "5000"                  # §5.4 server port
+      REDIS_HOST: redis             # §5.2 reach the redis service BY NAME
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]   # durable writes (AOF)
+    volumes:
+      - codyssey_data:/data         # §4.9 persist redis data on a named volume
+
+volumes:
+  codyssey_data:
